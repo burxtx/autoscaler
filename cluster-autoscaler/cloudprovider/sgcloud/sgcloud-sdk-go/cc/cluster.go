@@ -1,7 +1,6 @@
 package cc
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -43,8 +42,11 @@ type Instance struct {
 }
 
 type AddInstanceArgs struct {
-	ClusterID string `json:"clusterId"`
-	Delta     int    `json:"delta"`
+	ClusterID  string `json:"clusterId"`
+	Delta      int    `json:"delta"`
+	Type       int    `json:"type"`
+	SpecCpu    int    `json:"specCpu"`
+	SpecMemory int    `json:"specMemory"`
 }
 
 type RemoveInstanceArgs struct {
@@ -123,12 +125,7 @@ func (c *Client) DescribeCluster(clusterID string) (*ContainerCluster, error) {
 
 // RemoveInstance returns the description of the cluster
 func (c *Client) RemoveInstance(args *RemoveInstanceArgs) error {
-	postContent, err := json.Marshal(args)
-	if err != nil {
-		return err
-	}
-
-	req, err := core.NewRequest(http.MethodPost, c.GetURL("/cluster/nodes/delete", nil), bytes.NewBuffer(postContent))
+	req, err := core.NewRequest(http.MethodPost, c.GetURL("/cluster/nodes/delete", nil), args)
 
 	if err != nil {
 		return err
@@ -140,12 +137,7 @@ func (c *Client) RemoveInstance(args *RemoveInstanceArgs) error {
 
 // AddInstance returns the description of the cluster
 func (c *Client) AddInstance(args *AddInstanceArgs) error {
-	postContent, err := json.Marshal(args)
-	if err != nil {
-		return err
-	}
-
-	req, err := core.NewRequest(http.MethodPost, c.GetURL("/cluster/nodes/add", nil), bytes.NewBuffer(postContent))
+	req, err := core.NewRequest(http.MethodPost, c.GetURL("/cluster/nodes/add", nil), args)
 
 	if err != nil {
 		return err

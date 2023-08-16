@@ -48,11 +48,18 @@ rules:
     resources: ["poddisruptionbudgets"]
     verbs: ["watch", "list"]
   - apiGroups: ["apps"]
-    resources: ["statefulsets", "replicasets"]
+    resources: ["statefulsets", "replicasets", "daemonsets"]
     verbs: ["watch", "list", "get"]
   - apiGroups: ["storage.k8s.io"]
-    resources: ["storageclasses"]
+    resources: ["storageclasses", "csinodes", "csidrivers", "csistoragecapacities"]
     verbs: ["watch", "list", "get"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: ["cluster-autoscaler"]
+    verbs: ["create", "get", "update"]
+  - apiGroups: ["batch", "extensions"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "patch"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -129,7 +136,7 @@ spec:
     spec:
       serviceAccountName: cluster-autoscaler
       containers:
-        - image: cluster-autoscaler:latest
+        - image: cluster-autoscaler:v0.0.5
           name: cluster-autoscaler
           resources:
             limits:
@@ -145,22 +152,27 @@ spec:
             - --cloud-provider=sgcloud
             - --skip-nodes-with-local-storage=false
             - --nodes=1:10:k8s-worker-asg-1
-            - --cloud-config=/etc/kubernetes/cloud.json
-            - --kubeconfig=/root/.kube/config
+            - --cloud-config=/config/cloud-config
           volumeMounts:
-            - name: kubeconfig
-              mountPath: /root/.kube/
-              readOnly: true
             - name: cloud-config
-              mountPath: /etc/kubernetes/
+              mountPath: /config
               readOnly: true
           imagePullPolicy: IfNotPresent
       volumes:
         - name: cloud-config
-          hostPath:
-            path: /etc/kubernetes/
-            type: Directory
-        - name: kubeconfig
-          hostPath:
-            path: /root/.kube/
-            type: Directory
+          secret:
+            secretName: cluster-autoscaler-cloud-config
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cluster-autoscaler-cloud-config
+  namespace: kube-system
+type: Opaque
+stringData:
+  cloud-config: |-
+    {
+      "ClusterId": "6b8b7c8e-7314-4d17-bb0c-fcc9777230fa",
+      "CcRegion": "debug",
+      "CcEndpoint": "27.196.6.50:9030"
+    }

@@ -240,7 +240,7 @@ func (m *sgcloudManager) buildNodeFromTemplate(sg *AutoScalingGroup, template *a
 
 	node.Status.Capacity[apiv1.ResourcePods] = *resource.NewQuantity(defaultPodAmountsLimit, resource.DecimalSI)
 	node.Status.Capacity[apiv1.ResourceCPU] = *resource.NewQuantity(int64(template.CPU), resource.DecimalSI)
-	node.Status.Capacity[apiv1.ResourceMemory] = *resource.NewQuantity(int64(template.Memory), resource.DecimalSI)
+	node.Status.Capacity[apiv1.ResourceMemory] = *resource.NewQuantity(int64(template.Memory)*1024*1024*1024, resource.DecimalSI)
 
 	node.Status.Allocatable = node.Status.Capacity
 
